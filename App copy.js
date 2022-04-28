@@ -15,7 +15,6 @@ export default function App() {
   const [newPop, setNewPop] = useState(false);
   const [visible, setVisible] = useState(false);
   const [date, setDate] = useState(new Date());
-  const [finish, setFinish] = useState(false);
 
   useEffect(() => {
     loadToDos();
@@ -27,8 +26,6 @@ export default function App() {
     setCalendar(true);
   }
   const onChangeText = (payload) => setText(payload); // input을 위한 장치
-  const getFinished = (current) => {setFinish(!current);}; // finish하면 style 바꿔주기
-
   const saveToDos = async (toSave) => {
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
   };
@@ -42,7 +39,7 @@ export default function App() {
     }
     const newToDos = {
       ...toDos,
-      [Date.now()]: { text, edit:false, date , calendar, finish},
+      [Date.now()]: { text, edit:false, date , calendar},
     };
     setToDos(newToDos);
     await saveToDos(newToDos);
@@ -65,11 +62,26 @@ export default function App() {
       },
     ]);
   };
-
+  const finishToDo = (key) => {
+    Alert.alert("Finish Todo", "Really?", [
+      { text: "Cancel" },
+      {
+        text: "I'm Sure",
+        style: "destructive",
+        onPress: async () => {
+          const newToDos = { ...toDos };
+          delete newToDos[key];
+          setToDos(newToDos);
+          await saveToDos(newToDos);
+          Alert.alert("Congratulations!","You Did it!", [{text: "Enter"}])
+        },
+      },
+    ]);
+  };
   const editToDo = async (key) => {
     let newToDos = {
       ...toDos,
-      [Date.now()]: { "id":Date.now(), text, edit:false, date , calendar, finish},
+      [Date.now()]: { "id":Date.now(), text, edit:false, date , calendar},
     };
     newToDos = Object.values(newToDos).filter(item => item.edit === false); // Object.values 안쓰면 안됨..ㅅㅂ
     setToDos(newToDos);
@@ -83,13 +95,13 @@ export default function App() {
       <StatusBar style="auto" />
       <View style={styles.header}>
       <Pressable onPress={getTodo}>
-          <Text style={{ ...styles.btnText, color: calendar ? "#faedcd" : "#e85d04" }}>
+          <Text style={{ ...styles.btnText, color: calendar ? "grey" : "white" }}>
             Todo
           </Text>
         </Pressable>
         <Pressable onPress={getCalendar}>
-          <Text style={{...styles.btnText, color: !calendar ? "#faedcd" : "#e85d04"}}>
-            Goal
+          <Text style={{...styles.btnText, color: !calendar ? "grey" : "white"}}>
+            Memo
           </Text>
         </Pressable>
       </View>
@@ -105,7 +117,7 @@ export default function App() {
         date={date}
         setDate={setDate}
         />
-        <ScrollView style={{maxHeight: 433,}}>
+        <ScrollView>
           {toDos != null ? 
             Object.keys(toDos).map((key) =>
               toDos[key].calendar === calendar ? (
@@ -113,7 +125,7 @@ export default function App() {
                 <TodoInput 
                 addToDo={editToDo}
                 onChangeText = {onChangeText}
-                text = {`${toDos[key].text} (수정)`} // 방법 찾아보기.. 안되면 말구.
+                text = {toDos[key].text}
                 visible={visible == true ? toDos[key].edit : false} // visible이 true인 경우 모든 팝업이 뜨지 않게 edit=true만 보여준다
                 toggle={() => {
                   toDos[key] = {...toDos[key], edit: false};
@@ -128,40 +140,26 @@ export default function App() {
                 toDos[key] = {...toDos[key], edit: true};
                 setVisible(!visible);
                 console.log(toDos)}}
-              style={{... styles.toDo, opacity: toDos[key].finish ? 0.5 : null}}
+              style={styles.toDo}
               key={key}
-              onPress={() => {
-                getFinished(finish); 
-                toDos[key] = {...toDos[key], "finish":!finish};
-                }} 
               >                
-                <Text style={toDos[key].finish == true? styles.finishTodo : styles.toDoText}>{toDos[key].text}</Text>
-                <View style={styles.restText}>
-                  {toDos[key].date ? 
-                    Math.ceil((new Date(`${toDos[key].date}`).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) == 0 ?                 
-                    <View style={styles.dDay}><Text style={{...styles.rests, textAlign:"center", color:"white"}}>D-Day</Text></View> :
-                    Math.ceil((new Date(`${toDos[key].date}`).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) > 0 ?
-                    <Text style={styles.rests}>D{-Math.ceil((new Date(`${toDos[key].date}`).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))}</Text> :
-                  <Text style={styles.rests}>D+{-Math.ceil((new Date(`${toDos[key].date}`).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))}</Text>
-                  : null}
-                  <Pressable onPress={() => {
-                    getFinished(finish); 
-                    toDos[key] = {...toDos[key], "finish":!finish};
-                    }} 
-                    style={styles.rests}>
-                    <AntDesign name="checkcircleo" size={22} color="white" />
-                  </Pressable>
-                  <Pressable onPress={() => deleteToDo(key)} style={styles.rests}>
-                    <Fontisto name="trash" size={22} color="white" />
-                  </Pressable>
-                </View>
+                <Text style={styles.toDoText}>{toDos[key].text}</Text>
+                {toDos[key].date ? 
+                <Text style={styles.toDoText}>D {-Math.ceil((new Date(`${toDos[key].date}`).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))}</Text>
+                : null}
+                    <Pressable onPress={() => finishToDo(key)}>
+                      <AntDesign name="checkcircleo" size={18} color="white" />
+                    </Pressable>
+                    <Pressable onPress={() => deleteToDo(key)}>
+                      <Fontisto name="trash" size={18} color="white" />
+                    </Pressable>
               </Pressable>
               </View>
               ) : null ) : null}
         </ScrollView>
       </View>
-      <Pressable onPress={() => setNewPop(true)} style={styles.plus}>
-        <Text style={{color:"white", fontSize:45, textAlign: "center", fontWeight:"900"}}>+</Text>
+      <Pressable onPress={() => setNewPop(true)}>
+        <AntDesign name="pluscircle" size={60} color="white" />
       </Pressable>
     </View>
   );
@@ -170,65 +168,31 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: "black",
+    paddingHorizontal: 20,
   },
   header: {
     justifyContent: "space-between",
     flexDirection: "row",
     marginTop: 100,
-    paddingBottom: 30,
-    paddingTop:10,
-    paddingHorizontal:30,
   },
   btnText: {
     fontSize: 38,
-    fontWeight: "800",
+    fontWeight: "600",
   },
   toDo: {
-    backgroundColor: "#faa307",
-    elevation: 7, // 그림자
+    backgroundColor: "pink",
     marginBottom: 10,
-    marginHorizontal: 20,
     paddingVertical: 20,
     paddingHorizontal: 20,
-    borderRadius: 30,
+    borderRadius: 15,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-  },
-  finishTodo : {
-    fontSize: 12,
-    opacity: 0.6,
-    color: "#f8f9fa",
-    textDecorationLine:"line-through",
-  },
-  dDay:{
-    backgroundColor:"#e85d04",
-    borderRadius: 30,
   },
   toDoText: {
     color: "white",
     fontSize: 16,
     fontWeight: "600",
   },
-  restText : {
-    justifyContent: "space-between",
-    flexDirection: "row",
-  },
-  rests: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
-    paddingHorizontal: 10,
-  },
-  plus: {
-    width: 65,
-    height: 65,
-    borderRadius: 100,
-    backgroundColor:"#ffba08",
-    position:"absolute",
-    bottom: 20,
-    right: 20,
-    elevation: 5,
-  }
 });

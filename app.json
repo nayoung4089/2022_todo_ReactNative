@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "2022_alarm_todo",
-    "slug": "2022_alarm_todo",
+    "name": "2022_todo_reactnative",
+    "slug": "2022_todo_reactnative",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -27,6 +27,7 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "description": ""
   }
 }
